@@ -1,5 +1,4 @@
-const WTKN = artifacts.require("WKLAY");
-const Router = artifacts.require("UniswapV2Router02");
+const Router = artifacts.require("UniswapV2Router01");
 
 module.exports = function (deployer, network, addresses) {
   const address = addresses[0]

@@ -4,6 +4,6 @@ module.exports = {
   tMDL: '0x8e7ccEad5A0d695bDa98dAf221B9273f557abF0e',
   tFST: '0x0fDa982c0C9813bC88111bB27ffA24b15A7aAf1F',
   wTKN: '0x430030Ca8760c8daB5fF525771Afa8b91EDA10E7',
-  factory: '',
-  router: ''
+  factory: '0xD9a7E85bD152b9e694376F60DFBbA1fBD95fD040',
+  router: '0xc7dB2eB8323c06b3819A0265DD179325fC05a733'
 }
