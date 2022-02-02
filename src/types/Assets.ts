@@ -14,6 +14,13 @@ export interface Token extends Contract {
 
 export type Tokens = 'tBora' | 'sODN' | 'sMDL' | 'sFST' | 'wklay';
 
+export type InputFix = 'in' | 'out';
+
+export interface Quote {
+  in: number;
+  out: number;
+}
+
 export interface UniRouter extends Contract {
   addLiquidity(
     tokenA: string,
@@ -25,7 +32,35 @@ export interface UniRouter extends Contract {
     to: string,
     deadline: string,
     options?: any
+  ): Promise<any>;
+
+  swapExactTokensForTokens(
+    amountIn: BigNumber,
+    outMin: BigNumber,
+    path: Array<string>,
+    to: string,
+    deadline: string,
+    options?: any
   ): Promise<void>;
+
+  swapTokensForExactTokens(
+    amountOut: BigNumber,
+    inMax: BigNumber,
+    path: Array<string>,
+    to: string,
+    deadline: string,
+    options?: any
+  ): Promise<void>;
+
+  getAmountsOut(
+    amountIn: BigNumber,
+    path: Array<string>
+  ): Promise<Array<BigNumber>>;
+
+  getAmountsIn(
+    amountOut: BigNumber,
+    path: Array<string>
+  ): Promise<Array<BigNumber>>;
 }
 
 export interface UniFactory extends Contract {

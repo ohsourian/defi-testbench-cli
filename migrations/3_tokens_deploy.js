@@ -1,4 +1,5 @@
 const Token = artifacts.require('TokenBase');
+const WKLAY = artifacts.require('WKLAY');
 
 module.exports = function (deployer, network, addresses) {
   const address = addresses[0];
@@ -26,4 +27,5 @@ module.exports = function (deployer, network, addresses) {
     const fund = await inst.totalSupply();
     console.log(`${name}: ${fund}`);
   });
+  deployer.deploy(WKLAY);
 };
