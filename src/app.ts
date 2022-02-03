@@ -1,70 +1,72 @@
 import { ethers, Wallet } from 'ethers';
-import assets, { tokenList } from './constants/assets';
-import { ierc20 } from './constants/abis';
+import { tokenList } from './constants/assets';
 import chalk from 'chalk';
-import { Token, Tokens } from './types/Assets';
-import { getAllBalance } from './services/TokenService';
-import { addLiquidity, getQuote, swapToken } from './services/RouterService';
+import { Tokens } from './types/Assets';
+import { getAllBalance, getLPBalance } from './services/TokenService';
+import {
+  addLiquidity,
+  getQuote,
+  getSwapPreview,
+  swapToken,
+} from './services/RouterService';
 import { getPool } from './services/FactoryService';
 import inquirer from 'inquirer';
 import figlet from 'figlet';
 import gradient from 'gradient-string';
 import { createSpinner } from 'nanospinner';
-import { sign } from 'crypto';
-
-console.log(chalk.bgGreen('foo'));
 
 const formatOpt = {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 };
-
+const availableActions = [
+  'Add Liquidity',
+  'remove Liquidity',
+  'Swap Tokens',
+  'Send Asset',
+  'Wrapped Token',
+  'Update Info',
+  'Exit',
+];
 let slippage = 0.03;
 
-// async function swap(signer: Wallet) {
-//   inquirer
-//     .prompt([
-//       {
-//         type: 'input',
-//         name: 'price',
-//         message: 'enter tBora value:',
-//         validate(input: string): boolean | string {
-//           if (Number(input) && !isNaN(Number(input))) {
-//             return true;
-//           }
-//           return 'only number can be accepted';
-//         },
-//       },
-//     ])
-//     .then(async (ans) => {
-//       const quote = await getQuote('tBora', 'sODN', 'in', ans.price, signer);
-//       console.log(`entered: ${ans.price} tBora`);
-//       console.log(`tBora (in): ${quote.in} tBora`);
-//       console.log(`sODN (out): ${quote.out} sODN`);
-//       console.log(`slippage: 1%`);
-//       inquirer
-//         .prompt([
-//           {
-//             type: 'input',
-//             name: 'choice',
-//             message: 'Continue Swap? (Y/N)',
-//             validate(input: string): boolean | string {
-//               if (['Y', 'N'].includes(input.toUpperCase())) {
-//                 return true;
-//               }
-//               return 'invalid input';
-//             },
-//           },
-//         ])
-//         .then(async (ans2) => {
-//           if (['Y', 'N'].includes(ans2.choice.toUpperCase())) {
-//             const amount = String(quote.in);
-//             const slippage = String(quote.out * 0.99);
-//             await swapToken('tBora', 'sODN', 'in', amount, slippage, signer);
-//           }
-//         });
-//     });
-// }
+async function proceedSwap(signer: Wallet) {
+  const tokens = await selectTokens();
+  const swapAmount = await getAmountInput(
+    `Enter ${chalk.bgBlueBright(tokens[0])} Amount to Swap`
+  );
+  const quote = await getSwapPreview(
+    tokens[0],
+    tokens[1],
+    'in',
+    swapAmount,
+    signer
+  );
+  console.log(chalk.bgBlackBright('<< Swap Transaction Bill >>'));
+  console.log(
+    `1. ${tokens[0]}: ${chalk.red('-' + formatCurrency(quote.in, tokens[0]))}`
+  );
+  console.log(
+    `2. ${tokens[1]}: ${chalk.green(
+      '+' + formatCurrency(quote.out, tokens[1])
+    )}`
+  );
+  if (await promptConsent()) {
+    const process = createSpinner(
+      'Add Swap Transaction in Progress...'
+    ).start();
+    await sleep(500);
+    try {
+      const amount = quote.in;
+      const minOut = (Number(quote.out) * (1 - slippage)).toString();
+      await swapToken(tokens[0], tokens[1], 'in', amount, minOut, signer);
+      process.success({ text: 'Swap Completed!' });
+    } catch (e) {
+      console.error(e);
+      process.error({ text: 'Something Went Wrong :(' });
+    }
+  }
+}
 
 async function proceedAddLiquidity(signer: Wallet) {
   const tokens = await selectTokens();
@@ -72,19 +74,25 @@ async function proceedAddLiquidity(signer: Wallet) {
   let amounts: [string, string] = ['', ''];
   if (pool) {
     console.log(chalk.blue('Pool Exist! Getting Quote...'));
-    amounts[0] = await getAmountInput(`Enter ${tokens[0]} Amount to Transfer`);
-    amounts[1] = await getQuote(pool, amounts[0], signer);
+    amounts[0] = await getAmountInput(
+      `Enter ${chalk.bgBlueBright(tokens[0])} Amount to Transfer`
+    );
+    amounts[1] = await getQuote(tokens[0], tokens[1], pool, amounts[0], signer);
   } else {
     console.log(chalk.yellow('Pool Not Found! Create LP with Initial Ratio'));
-    amounts[0] = await getAmountInput(`Enter ${tokens[0]} Amount to Transfer`);
-    amounts[1] = await getAmountInput(`Enter ${tokens[1]} Amount to Transfer`);
+    amounts[0] = await getAmountInput(
+      `Enter ${chalk.bgBlueBright(tokens[0])} Amount to Transfer`
+    );
+    amounts[1] = await getAmountInput(
+      `Enter ${chalk.bgBlueBright(tokens[1])} Amount to Transfer`
+    );
   }
-  console.log('<< Liquidity Transaction Bill >>');
+  console.log(chalk.bgBlackBright('<< Liquidity Transaction Bill >>'));
   console.log(
-    chalk.green(`1. ${tokens[0]}: -${formatCurrency(amounts[0], tokens[0])}`)
+    `1. ${tokens[0]}: ${chalk.red('-' + formatCurrency(amounts[0], tokens[0]))}`
   );
   console.log(
-    chalk.green(`2. ${tokens[1]}: -${formatCurrency(amounts[1], tokens[1])}`)
+    `2. ${tokens[1]}: ${chalk.red('-' + formatCurrency(amounts[1], tokens[1]))}`
   );
   if (await promptConsent()) {
     const process = createSpinner(
@@ -101,8 +109,24 @@ async function proceedAddLiquidity(signer: Wallet) {
       process.success({ text: 'Liquidity Added!' });
     } catch (e) {
       console.error(e);
-      process.success({ text: 'Something Went Wrong :(' });
+      process.error({ text: 'Something Went Wrong :(' });
     }
+  }
+}
+
+async function proceedRemoveLiquidity(signer: Wallet) {
+  const tokens = await selectTokens();
+  const pool = await getPool(tokens[0], tokens[1], signer);
+  if (pool) {
+    const balance = await getLPBalance(pool, signer);
+    console.log(
+      chalk.green(
+        `${tokens[0]}-${tokens[1]} LP: ${formatCurrency(balance, 'LP')}`
+      )
+    );
+    await sleep();
+  } else {
+    console.log(chalk.red('LP Not Exist :('));
   }
 }
 
@@ -148,7 +172,7 @@ async function promptConsent(): Promise<boolean> {
   const consent = await inquirer.prompt({
     type: 'input',
     name: 'choice',
-    message: 'Continue Swap? (Y/N)',
+    message: 'Continue Process? (Y/N)',
     validate(input: string): boolean | string {
       if (['Y', 'N'].includes(input.toUpperCase())) {
         return true;
@@ -162,16 +186,6 @@ async function promptConsent(): Promise<boolean> {
 function sleep(ms = 2000) {
   return new Promise((r) => setTimeout(r, ms));
 }
-
-const availableActions = [
-  'Add Liquidity',
-  'remove Liquidity',
-  'Swap Tokens',
-  'Send Asset',
-  'Wrapped Token',
-  'Update Info',
-  'Exit',
-];
 
 async function main() {
   // ## STEP 1. welcome message
@@ -208,7 +222,7 @@ async function main() {
   // });
   // const loginAttempt = createSpinner('logging in...').start();
   const signer = new Wallet(
-    'bcf743d15a90d53b5caca1f56f9e2edf2cee89292585b292329590f7a03f5a0b',
+    'b77c1b8aeb7429549836585f0da2a1d877ae2d7c83809261e0a7fff40719060d',
     provider
   );
   // await sleep();
@@ -228,14 +242,17 @@ async function main() {
   while (proceed) {
     // ## STEP 5. show balance
     console.log(
-      '================================================================='
+      gradient.retro(
+        '================================================================='
+      )
     );
     const balanceUpdate = createSpinner('Update chain info....').start();
     await sleep(500);
     try {
       const balances = await getAllBalance(signer);
-      balanceUpdate.success({ text: 'Your Assets:' });
-      console.log(chalk.green(`Address: ${signer.address}`));
+      balanceUpdate.success({ text: chalk.yellow('Your Assets:') });
+      console.log(`Address: ${signer.address}`);
+      console.log(`Block Sync: ${await signer.provider.getBlockNumber()}`);
       console.log(
         chalk.green(
           `1. ${formatCurrency(
@@ -261,7 +278,7 @@ async function main() {
     const selected = await inquirer.prompt({
       type: 'list',
       name: 'main',
-      message: 'What should you do?',
+      message: chalk.yellow('What should you do?'),
       choices: availableActions,
     });
     switch (selected.main) {
@@ -269,8 +286,10 @@ async function main() {
         await proceedAddLiquidity(signer);
         break;
       case availableActions[1]: // remove Liquidity
+        await proceedRemoveLiquidity(signer);
         break;
       case availableActions[2]: // Swap Tokens
+        await proceedSwap(signer);
         break;
       case availableActions[3]: // Send Asset
         break;

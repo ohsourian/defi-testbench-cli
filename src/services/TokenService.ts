@@ -1,7 +1,7 @@
 import assets, { tokenList } from '../constants/assets';
-import { Token, Tokens } from '../types/Assets';
+import { Token, Tokens, UniPair } from '../types/Assets';
 import { ethers, Wallet } from 'ethers';
-import { ierc20 } from '../constants/abis';
+import { ierc20, ipair } from '../constants/abis';
 
 export async function getAllBalance(
   provider: Wallet
@@ -38,4 +38,11 @@ export async function approve(
     return false;
   }
   return true;
+}
+
+export async function getLPBalance(pool: string, signer: Wallet) {
+  const lp = <UniPair>new ethers.Contract(pool, ipair, signer);
+  return Number(
+    ethers.utils.formatEther(await lp.balanceOf(signer.address))
+  ).toString();
 }

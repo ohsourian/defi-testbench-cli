@@ -1,7 +1,14 @@
 import { ethers, providers, Wallet } from 'ethers';
-import { UniRouter, Tokens, InputFix, Quote, UniPair } from '../types/Assets';
+import {
+  UniRouter,
+  Tokens,
+  InputFix,
+  Quote,
+  UniPair,
+  Token,
+} from '../types/Assets';
 import assets from '../constants/assets';
-import { ipair, irouter } from '../constants/abis';
+import { ierc20, ipair, irouter } from '../constants/abis';
 import { approve } from './TokenService';
 
 export async function addLiquidity(
@@ -65,9 +72,10 @@ export async function getSwapPreview(
       path
     );
     return {
-      in: Number(amount) || 0,
-      out:
-        Number(ethers.utils.formatEther(amountOut[amountOut.length - 1])) || 0,
+      in: amount,
+      out: Number(
+        ethers.utils.formatEther(amountOut[amountOut.length - 1])
+      ).toString(),
     };
   } else {
     const amountIn = await uniRouter.getAmountsIn(
@@ -75,8 +83,8 @@ export async function getSwapPreview(
       path
     );
     return {
-      in: Number(ethers.utils.formatEther(amountIn[0])) || 0,
-      out: Number(amount) || 0,
+      in: Number(ethers.utils.formatEther(amountIn[0])).toString(),
+      out: amount,
     };
   }
 }
@@ -106,7 +114,7 @@ export async function swapToken(
       path,
       signer.address,
       deadline,
-      { nonce: nonce + 1 }
+      { nonce: nonce + 1, gasLimit: '1500000' }
     );
   } else {
     await uniRouter.swapTokensForExactTokens(
@@ -121,21 +129,24 @@ export async function swapToken(
 }
 
 export async function getQuote(
+  tokenA: Tokens,
+  tokenB: Tokens,
   pool: string,
   amount: string,
   signer: Wallet
 ): Promise<string> {
-  const uniPool = <UniPair>new ethers.Contract(pool, ipair, signer);
-  const reserves = await uniPool.getReserves();
-  const uniRouter = <UniRouter>(
-    new ethers.Contract(assets.router, irouter, signer)
-  );
-  const amountB = await uniRouter.quote(
-    ethers.utils.parseEther(amount),
-    reserves.reserve0,
-    reserves.reserve1
-  );
-  return Number(ethers.utils.formatEther(amountB)).toString();
+  const assetMap = assets as { [key: string]: string };
+  const tknA = <Token>new ethers.Contract(assetMap[tokenA], ierc20, signer);
+  const tknB = <Token>new ethers.Contract(assetMap[tokenB], ierc20, signer);
+  const balA = await tknA.balanceOf(pool);
+  const balB = await tknB.balanceOf(pool);
+  if (Number(balA.toString()) > 0 && Number(balB.toString()) > 0) {
+    const amountA = ethers.utils.parseEther(amount);
+    return Number(
+      ethers.utils.formatEther(amountA.mul(balB).div(balA))
+    ).toString();
+  }
+  return '0';
 }
 
 async function getDeadline(

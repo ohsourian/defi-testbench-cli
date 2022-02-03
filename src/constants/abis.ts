@@ -34,6 +34,7 @@ export const ifactory = [
 ];
 
 export const ipair = [
+  'function balanceOf(address owner) external view returns (uint)',
   'function factory() external view returns (address)',
   'function token0() external view returns (address)',
   'function token1() external view returns (address)',

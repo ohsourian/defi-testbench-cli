@@ -17,8 +17,8 @@ export type Tokens = 'tBora' | 'sODN' | 'sMDL' | 'sFST' | 'wklay';
 export type InputFix = 'in' | 'out';
 
 export interface Quote {
-  in: number;
-  out: number;
+  in: string;
+  out: string;
 }
 
 export interface UniRouter extends Contract {
@@ -83,4 +83,6 @@ export interface Reserves {
 
 export interface UniPair extends Contract {
   getReserves(): Promise<Reserves>;
+
+  balanceOf(owner: string): Promise<BigNumber>;
 }
