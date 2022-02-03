@@ -421,6 +421,18 @@
   resolved "https://registry.yarnpkg.com/@tsconfig/node16/-/node16-1.0.2.tgz#423c77877d0569db20e1fc80885ac4118314010e"
   integrity sha512-eZxlbI8GZscaGS7kkc/trHTT5xgrjH3/1n2JDwusC9iahPKWMRvRjJSAN5mCXviuTGQ/lHnhvv8Q1YTpnfz9gA==
 
+"@types/figlet@^1.5.4":
+  version "1.5.4"
+  resolved "https://registry.yarnpkg.com/@types/figlet/-/figlet-1.5.4.tgz#54a426d63e921a9bca44102c5b1b1f206fa56d93"
+  integrity sha512-cskPTju7glYgzvkJy/hftqw7Fen3fsd0yrPOqcbBLJu+YdDQuA438akS1g+2XVKGzsQOnXGV2I9ePv6xUBnKMQ==
+
+"@types/gradient-string@^1.1.2":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@types/gradient-string/-/gradient-string-1.1.2.tgz#b6aa618fed6afd6b888aed9cd69d2a2c8f8880c4"
+  integrity sha512-zIet2KvHr2dkOCPI5ggQQ+WJVyfBSFaqK9sNelhgDjlE2K3Fu2muuPJwu5aKM3xoWuc3WXudVEMUwI1QWhykEQ==
+  dependencies:
+    "@types/tinycolor2" "*"
+
 "@types/inquirer@^8.2.0":
   version "8.2.0"
   resolved "https://registry.yarnpkg.com/@types/inquirer/-/inquirer-8.2.0.tgz#b9566d048f5ff65159f2ed97aff45fe0f00b35ec"
@@ -445,6 +457,11 @@
   integrity sha512-FvnCJljyxhPM3gkRgWmxmDZyAQSiBQQWLI0A0VFL0K7W1oRUrPJSqNO0NvTnLkBcotdlp3lKvaT0JrnyRDkzOg==
   dependencies:
     "@types/node" "*"
+
+"@types/tinycolor2@*", "@types/tinycolor2@^1.4.0":
+  version "1.4.3"
+  resolved "https://registry.yarnpkg.com/@types/tinycolor2/-/tinycolor2-1.4.3.tgz#ed4a0901f954b126e6a914b4839c77462d56e706"
+  integrity sha512-Kf1w9NE5HEgGxCRyIcRXR/ZYtDv0V8FVPtYHwLxl0O+maGX0erE77pQlD0gpP+/KByMZ87mOA79SjifhSB3PjQ==
 
 "@typescript-eslint/eslint-plugin@^4.18.0":
   version "4.33.0"
@@ -995,6 +1012,11 @@ fastq@^1.6.0:
   dependencies:
     reusify "^1.0.4"
 
+figlet@^1.5.2:
+  version "1.5.2"
+  resolved "https://registry.yarnpkg.com/figlet/-/figlet-1.5.2.tgz#dda34ff233c9a48e36fcff6741aeb5bafe49b634"
+  integrity sha512-WOn21V8AhyE1QqVfPIVxe3tupJacq1xGkPTB4iagT6o+P2cAgEOOwIxMftr4+ZCTI6d551ij9j61DFr0nsP2uQ==
+
 figures@^3.0.0:
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/figures/-/figures-3.2.0.tgz#625c18bd293c604dc4a8ddb2febf0c88341746af"
@@ -1077,6 +1099,14 @@ globby@^11.0.3:
     ignore "^5.2.0"
     merge2 "^1.4.1"
     slash "^3.0.0"
+
+gradient-string@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/gradient-string/-/gradient-string-2.0.0.tgz#0333846e88e6011bdd12fa73d0fa2a60dfd34f51"
+  integrity sha512-xa+FXy1bOfJWqA4xKlKTfVXxuOwNRwvsO7Tj8oi/6Rodfgo4ENKApVOU95KxTKb7eML9E9eA2Uqq3C9LtVPM5w==
+  dependencies:
+    chalk "^4.1.2"
+    tinygradient "^1.1.5"
 
 has-flag@^3.0.0:
   version "3.0.0"
@@ -1309,6 +1339,13 @@ mute-stream@0.0.8:
   resolved "https://registry.yarnpkg.com/mute-stream/-/mute-stream-0.0.8.tgz#1630c42b2251ff81e2a283de96a5497ea92e5e0d"
   integrity sha512-nnbWWOkoWyUsTjKrhgD0dcz22mdkSnpYqbEjIm2nhwhuxlSkpywJmBo8h0ZqJdkp73mb90SssHkN4rsRaBAfAA==
 
+nanospinner@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/nanospinner/-/nanospinner-1.0.0.tgz#6af6bb0e5f0ddf0004e3426f61765fa0ab6ba010"
+  integrity sha512-14c2r2QQ9xfTmdbqdF51FKCNvww+0ZON9GeEHur+pBdOufoFvxD4CZQRaYWmFrGH3Nuv7PZ/9Q+wsV+hFSp32g==
+  dependencies:
+    picocolors "^1.0.0"
+
 natural-compare@^1.4.0:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/natural-compare/-/natural-compare-1.4.0.tgz#4abebfeed7541f2c27acfb29bdbbd15c8d5ba4f7"
@@ -1371,6 +1408,11 @@ path-type@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/path-type/-/path-type-4.0.0.tgz#84ed01c0a7ba380afe09d90a8c180dcd9d03043b"
   integrity sha512-gDKb8aZMDeD/tZWs9P6+q0J9Mwkdl6xMV8TjnGP3qJVJ06bdMgkbBlLU8IdfOsIsFz2BW1rNVT3XuNEl8zPAvw==
+
+picocolors@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/picocolors/-/picocolors-1.0.0.tgz#cb5bdc74ff3f51892236eaf79d68bc44564ab81c"
+  integrity sha512-1fygroTLlHu66zi26VoTDv8yRgm0Fccecssto+MhsZ0D/DGW2sm8E8AjW7NU5VVTRt5GxbeZ5qBuJr+HyLYkjQ==
 
 picomatch@^2.2.3:
   version "2.3.1"
@@ -1603,6 +1645,19 @@ through@^2.3.6:
   version "2.3.8"
   resolved "https://registry.yarnpkg.com/through/-/through-2.3.8.tgz#0dd4c9ffaabc357960b1b724115d7e0e86a2e1f5"
   integrity sha1-DdTJ/6q8NXlgsbckEV1+Doai4fU=
+
+tinycolor2@^1.0.0:
+  version "1.4.2"
+  resolved "https://registry.yarnpkg.com/tinycolor2/-/tinycolor2-1.4.2.tgz#3f6a4d1071ad07676d7fa472e1fac40a719d8803"
+  integrity sha512-vJhccZPs965sV/L2sU4oRQVAos0pQXwsvTLkWYdqJ+a8Q5kPFzJTuOFwy7UniPli44NKQGAglksjvOcpo95aZA==
+
+tinygradient@^1.1.5:
+  version "1.1.5"
+  resolved "https://registry.yarnpkg.com/tinygradient/-/tinygradient-1.1.5.tgz#0fb855ceb18d96b21ba780b51a8012033b2530ef"
+  integrity sha512-8nIfc2vgQ4TeLnk2lFj4tRLvvJwEfQuabdsmvDdQPT0xlk9TaNtpGd6nNRxXoK6vQhN6RSzj+Cnp5tTQmpxmbw==
+  dependencies:
+    "@types/tinycolor2" "^1.4.0"
+    tinycolor2 "^1.0.0"
 
 tmp@^0.0.33:
   version "0.0.33"

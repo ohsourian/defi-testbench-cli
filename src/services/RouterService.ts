@@ -1,80 +1,53 @@
-import {
-  Contract,
-  ContractReceipt,
-  ethers,
-  providers,
-  Transaction,
-  Wallet,
-} from 'ethers';
-import { UniRouter, Tokens, InputFix, Token, Quote } from '../types/Assets';
+import { ethers, providers, Wallet } from 'ethers';
+import { UniRouter, Tokens, InputFix, Quote, UniPair } from '../types/Assets';
 import assets from '../constants/assets';
-import { irouter } from '../constants/abis';
+import { ipair, irouter } from '../constants/abis';
 import { approve } from './TokenService';
-import { sign } from 'crypto';
 
 export async function addLiquidity(
-  tokenA: Tokens,
-  tokenB: Tokens,
+  tokenPair: [Tokens, Tokens],
+  amountPair: [string, string],
+  minPair: [string, string],
   signer: Wallet
-) {
-  const amountA = '500000000';
-  const amountB = '1000000000';
+): Promise<void> {
   const nonce = await signer.getTransactionCount();
   const assetMap = assets as { [key: string]: string };
   const uniRouter = <UniRouter>(
     new ethers.Contract(assets.router, irouter, signer)
   );
   const approvals = [
-    await approve(tokenA, amountA, assets.router, signer, { nonce: nonce }),
-    await approve(tokenB, amountB, assets.router, signer, { nonce: nonce + 1 }),
+    await approve(tokenPair[0], amountPair[0], assets.router, signer, {
+      nonce: nonce,
+    }),
+    await approve(tokenPair[1], amountPair[1], assets.router, signer, {
+      nonce: nonce + 1,
+    }),
   ];
-  const weiA = ethers.utils.parseEther(amountA);
-  const weiB = ethers.utils.parseEther(amountB);
-  const wei0 = ethers.utils.parseEther('0');
-  const deadline = await getDeadline(signer.provider, 10000);
+  const weiA = ethers.utils.parseEther(amountPair[0]);
+  const weiB = ethers.utils.parseEther(amountPair[1]);
+  const weiMA = ethers.utils.parseEther(minPair[0]);
+  const weiMB = ethers.utils.parseEther(minPair[1]);
+  const deadline = await getDeadline(signer.provider, 1000);
   if (approvals.every((el) => el)) {
     try {
-      const tx = await uniRouter.addLiquidity(
-        assetMap[tokenA],
-        assetMap[tokenB],
+      await uniRouter.addLiquidity(
+        assetMap[tokenPair[0]],
+        assetMap[tokenPair[1]],
         weiA,
         weiB,
-        wei0,
-        wei0,
+        weiMA,
+        weiMB,
         signer.address,
         deadline,
         { nonce: nonce + 2, gasLimit: '3800000' }
       );
-      tx.wait().then(
-        (res: any) => {
-          console.log('success??');
-          return true;
-        },
-        async (error: any) => {
-          console.log('error receipt');
-          const code = await signer.provider.call(tx, tx.blockNumber);
-          console.log({ code });
-          return false;
-        }
-      );
-      return true;
     } catch (e) {
       console.error(e);
     }
-    return false;
   }
 }
 
-function hex_to_ascii(str1: string) {
-  const hex = str1.toString();
-  let str = '';
-  for (let n = 0; n < hex.length; n += 2) {
-    str += String.fromCharCode(parseInt(hex.substr(n, 2), 16));
-  }
-  return str;
-}
-
-export async function getQuote(
+export async function getSwapPreview(
   tokenIn: Tokens,
   tokenOut: Tokens,
   fix: InputFix,
@@ -142,9 +115,27 @@ export async function swapToken(
       path,
       signer.address,
       deadline,
-      { nonce: nonce + 1, gasLimit: '1500000'}
+      { nonce: nonce + 1, gasLimit: '1500000' }
     );
   }
+}
+
+export async function getQuote(
+  pool: string,
+  amount: string,
+  signer: Wallet
+): Promise<string> {
+  const uniPool = <UniPair>new ethers.Contract(pool, ipair, signer);
+  const reserves = await uniPool.getReserves();
+  const uniRouter = <UniRouter>(
+    new ethers.Contract(assets.router, irouter, signer)
+  );
+  const amountB = await uniRouter.quote(
+    ethers.utils.parseEther(amount),
+    reserves.reserve0,
+    reserves.reserve1
+  );
+  return Number(ethers.utils.formatEther(amountB)).toString();
 }
 
 async function getDeadline(

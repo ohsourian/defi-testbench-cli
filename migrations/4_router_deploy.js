@@ -1,8 +1,8 @@
 const Router = artifacts.require('UniswapV2Router01');
 
 module.exports = function (deployer, network, addresses) {
-  const factory = '0x0F8D6FB1F39c9E14EB2201c75DfC73cA6888f4D4';
-  const wklay = '0x68b59E3B4F0FEc468CeB279956eDE35E5e5bBc80';
+  const factory = '0x8d80a204523d967Cb72Ea394B987Ba5aCC47d403';
+  const wklay = '0xf33229A78c7CD5DabE6F6A05bb620075875f2693';
   deployer.deploy(Router, factory, wklay).then((router) => {
     console.log({ wklay: wklay, router: router.address });
   });

@@ -52,6 +52,12 @@ export interface UniRouter extends Contract {
     options?: any
   ): Promise<void>;
 
+  quote(
+    amountA: BigNumber,
+    reserveA: BigNumber,
+    reserveB: BigNumber
+  ): Promise<BigNumber>;
+
   getAmountsOut(
     amountIn: BigNumber,
     path: Array<string>
@@ -67,4 +73,14 @@ export interface UniFactory extends Contract {
   allPairsLength(options?: any): Promise<BigNumber>;
 
   getPair(tokenA: string, tokenB: string): Promise<string>;
+}
+
+export interface Reserves {
+  reserve0: BigNumber;
+  reserve1: BigNumber;
+  blockTimestampLast: number;
+}
+
+export interface UniPair extends Contract {
+  getReserves(): Promise<Reserves>;
 }
