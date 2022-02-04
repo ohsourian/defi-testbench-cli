@@ -1,9 +1,9 @@
 import { BigNumber, Contract } from 'ethers';
 
 export interface Token extends Contract {
-  symbol(options?: any): Promise<string>;
+  symbol(): Promise<string>;
 
-  totalSupply(options?: any): Promise<BigNumber>;
+  totalSupply(): Promise<BigNumber>;
 
   balanceOf(address: string, options?: any): Promise<BigNumber>;
 
@@ -19,6 +19,7 @@ export type InputFix = 'in' | 'out';
 export interface Quote {
   in: string;
   out: string;
+  path: Array<string>;
 }
 
 export interface UniRouter extends Contract {
@@ -85,4 +86,8 @@ export interface UniPair extends Contract {
   getReserves(): Promise<Reserves>;
 
   balanceOf(owner: string): Promise<BigNumber>;
+
+  token0(): Promise<string>;
+
+  token1(): Promise<string>;
 }

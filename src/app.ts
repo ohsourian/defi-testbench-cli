@@ -7,6 +7,7 @@ import {
   addLiquidity,
   getQuote,
   getSwapPreview,
+  optimizePath,
   swapToken,
 } from './services/RouterService';
 import { getPool } from './services/FactoryService';
@@ -35,13 +36,15 @@ async function proceedSwap(signer: Wallet) {
   const swapAmount = await getAmountInput(
     `Enter ${chalk.bgBlueBright(tokens[0])} Amount to Swap`
   );
-  const quote = await getSwapPreview(
-    tokens[0],
-    tokens[1],
-    'in',
-    swapAmount,
-    signer
-  );
+  const pathProcess = createSpinner('Finding Optimal Path...\n').start();
+  await sleep(500);
+  const optimalPath = await optimizePath(tokens[0], tokens[1], signer);
+  if (!optimalPath) {
+    pathProcess.error({ text: chalk.red('Swap Path Not Exist! :(') });
+    return;
+  }
+  pathProcess.success({ text: chalk.green('Swap Preview Generated!') });
+  const quote = await getSwapPreview(optimalPath, 'in', swapAmount, signer);
   console.log(chalk.bgBlackBright('<< Swap Transaction Bill >>'));
   console.log(
     `1. ${tokens[0]}: ${chalk.red('-' + formatCurrency(quote.in, tokens[0]))}`
@@ -59,7 +62,7 @@ async function proceedSwap(signer: Wallet) {
     try {
       const amount = quote.in;
       const minOut = (Number(quote.out) * (1 - slippage)).toString();
-      await swapToken(tokens[0], tokens[1], 'in', amount, minOut, signer);
+      await swapToken(optimalPath, tokens[0], 'in', amount, minOut, signer);
       process.success({ text: 'Swap Completed!' });
     } catch (e) {
       console.error(e);
@@ -130,6 +133,14 @@ async function proceedRemoveLiquidity(signer: Wallet) {
   }
 }
 
+async function proceedTransferToken(signer: Wallet) {
+  const tokens = await selectTokens();
+}
+
+/**
+ * COMMON FUNCTIONS
+ */
+
 function formatCurrency(value: string, unit: string) {
   return `${Number(value).toLocaleString('en-US', formatOpt)} ${unit}`;
 }
@@ -150,6 +161,18 @@ async function selectTokens(): Promise<[Tokens, Tokens]> {
     },
   ]);
   return [tkQuery.dep as Tokens, tkQuery.des as Tokens];
+}
+
+async function selectSingleToken(): Promise<Tokens> {
+  const tkQuery = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'tk',
+      message: 'Select an asset:',
+      choices: tokenList,
+    },
+  ]);
+  return tkQuery.tk as Tokens;
 }
 
 async function getAmountInput(msg = ''): Promise<string> {
@@ -187,6 +210,9 @@ function sleep(ms = 2000) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/**
+ * CLI MAIN FUNCTION
+ */
 async function main() {
   // ## STEP 1. welcome message
 
@@ -222,7 +248,7 @@ async function main() {
   // });
   // const loginAttempt = createSpinner('logging in...').start();
   const signer = new Wallet(
-    'b77c1b8aeb7429549836585f0da2a1d877ae2d7c83809261e0a7fff40719060d',
+    '682bdd66664f073f48705553f608f5cf399b72c7850c74cdd1c5bc654d36b8a2',
     provider
   );
   // await sleep();
@@ -292,6 +318,7 @@ async function main() {
         await proceedSwap(signer);
         break;
       case availableActions[3]: // Send Asset
+        await proceedTransferToken(signer);
         break;
       case availableActions[4]: // Wrapped Token
         break;

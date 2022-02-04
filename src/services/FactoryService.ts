@@ -12,16 +12,18 @@ export async function getPool(
     new ethers.Contract(assets.factory, ifactory, signer)
   );
   const assetMap = assets as { [key: string]: string };
-  const lpAddress: string = await uniFactory.getPair(
-    assetMap[tokenA],
-    assetMap[tokenB]
-  );
-  if (lpAddress !== ethers.constants.AddressZero) {
-    return lpAddress;
+  try {
+    const lpAddress: string = await uniFactory.getPair(
+      assetMap[tokenA],
+      assetMap[tokenB]
+    );
+    if (lpAddress !== ethers.constants.AddressZero) {
+      return lpAddress;
+    }
+  } catch (e) {
+    console.error(e);
   }
   return null;
 }
 
-export async function getReserves() {
-
-}
+export async function getReserves() {}

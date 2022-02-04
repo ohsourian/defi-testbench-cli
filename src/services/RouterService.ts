@@ -7,9 +7,11 @@ import {
   UniPair,
   Token,
 } from '../types/Assets';
-import assets from '../constants/assets';
+import assets, { tokenList } from '../constants/assets';
 import { ierc20, ipair, irouter } from '../constants/abis';
 import { approve } from './TokenService';
+import { getPool } from './FactoryService';
+import { PairWrap } from '../types/PairWrap';
 
 export async function addLiquidity(
   tokenPair: [Tokens, Tokens],
@@ -55,8 +57,7 @@ export async function addLiquidity(
 }
 
 export async function getSwapPreview(
-  tokenIn: Tokens,
-  tokenOut: Tokens,
+  path: Array<string>,
   fix: InputFix,
   amount: string,
   signer: Wallet
@@ -64,8 +65,6 @@ export async function getSwapPreview(
   const uniRouter = <UniRouter>(
     new ethers.Contract(assets.router, irouter, signer)
   );
-  const assetMap = assets as { [key: string]: string };
-  const path = [assetMap[tokenIn], assetMap[tokenOut]];
   if (fix === 'in') {
     const amountOut = await uniRouter.getAmountsOut(
       ethers.utils.parseEther(amount),
@@ -76,6 +75,7 @@ export async function getSwapPreview(
       out: Number(
         ethers.utils.formatEther(amountOut[amountOut.length - 1])
       ).toString(),
+      path,
     };
   } else {
     const amountIn = await uniRouter.getAmountsIn(
@@ -85,13 +85,73 @@ export async function getSwapPreview(
     return {
       in: Number(ethers.utils.formatEther(amountIn[0])).toString(),
       out: amount,
+      path,
     };
   }
 }
 
+export async function optimizePath(
+  departure: Tokens,
+  arrival: Tokens,
+  signer: Wallet,
+  maxHop = 5
+): Promise<Array<string> | null> {
+  // Getting all Edges
+  const pairs: Array<UniPair> = [];
+  const assetMap = assets as { [key: string]: string };
+  await Promise.all(
+    tokenList.map(async (tknA, i) => {
+      for (let j = i + 1; j < tokenList.length; j++) {
+        const tknB = tokenList[j];
+        if (tknA !== tknB) {
+          const pair = await getPool(tknA, tknB, signer);
+          if (pair) {
+            pairs.push(<UniPair>new ethers.Contract(pair, ipair, signer));
+          }
+        }
+      }
+    })
+  );
+  // Register as PairWrap and construct graph
+  const graph: Map<string, Array<string>> = new Map();
+  const edges: Array<PairWrap> = await Promise.all(
+    pairs.map(async (pair) => {
+      return await PairWrap.buildPairWrap(graph, pair);
+    })
+  );
+  console.log(`Departure => ${assetMap[departure]}`);
+  console.log(`Arrival <= ${assetMap[arrival]}`);
+  // exec BFS
+  let hop = 0;
+  let queue: Array<Array<string>> = [[assetMap[departure]]];
+  let explored: Array<string> = [];
+  while (queue.length && hop <= maxHop) {
+    const path = queue.pop()!;
+    const node = path[path.length - 1];
+    if (!explored.includes(node)) {
+      const adjacent = graph.get(node);
+      if (adjacent) {
+        for (const adj of adjacent) {
+          const nPath = [...path, adj];
+          queue.push(nPath);
+          console.log(`Traversal Log :::: [${nPath.join(' => ')}]`);
+          if (adj === assetMap[arrival]) {
+            console.log('PATH FOUND :)');
+            return nPath;
+          }
+        }
+      }
+    }
+    explored.push(node);
+    hop++;
+  }
+  console.log('PATH NOT FOUND :(');
+  return null;
+}
+
 export async function swapToken(
+  path: Array<string>,
   tokenIn: Tokens,
-  tokenOut: Tokens,
   fix: InputFix,
   amount: string,
   slippage: string,
@@ -100,8 +160,6 @@ export async function swapToken(
   const uniRouter = <UniRouter>(
     new ethers.Contract(assets.router, irouter, signer)
   );
-  const assetMap = assets as { [key: string]: string };
-  const path = [assetMap[tokenIn], assetMap[tokenOut]];
   const deadline = await getDeadline(signer.provider, 1000);
   const weiExt = ethers.utils.parseEther(amount);
   const weiEst = ethers.utils.parseEther(slippage);
