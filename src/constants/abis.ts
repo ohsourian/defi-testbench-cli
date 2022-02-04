@@ -8,6 +8,13 @@ export const ierc20 = [
   'function transferFrom(address sender, address recipient, uint256 amount) external returns (bool)',
 ];
 
+export const iwklay = [
+  'function deposit() external payable',
+  'function transfer(address to, uint value) external returns (bool)',
+  'function balanceOf(address account) external view returns (uint256)',
+  'function withdraw(uint) external',
+];
+
 export const irouter = [
   'function factory() external pure returns (address)',
   'function WKLAY() external pure returns (address)',

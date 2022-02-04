@@ -12,6 +12,12 @@ export interface Token extends Contract {
   approve(spender: string, amount: BigNumber, options?: any): Promise<void>;
 }
 
+export interface WKLAY extends Contract {
+  deposit(options?: any): Promise<void>;
+
+  withdraw(amount: BigNumber): Promise<void>;
+}
+
 export type Tokens = 'tBora' | 'sODN' | 'sMDL' | 'sFST' | 'wklay';
 
 export type InputFix = 'in' | 'out';

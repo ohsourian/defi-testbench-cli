@@ -15,6 +15,7 @@ import inquirer from 'inquirer';
 import figlet from 'figlet';
 import gradient from 'gradient-string';
 import { createSpinner } from 'nanospinner';
+import { depositTo } from './services/WKLAYService';
 
 const formatOpt = {
   minimumFractionDigits: 2,
@@ -130,6 +131,29 @@ async function proceedRemoveLiquidity(signer: Wallet) {
     await sleep();
   } else {
     console.log(chalk.red('LP Not Exist :('));
+  }
+}
+
+async function proceedDeposit(signer: Wallet) {
+  console.log(chalk.yellow('!!WARNING!! Your KLAY will be used!'));
+  const intake = await getAmountInput();
+  console.log(chalk.bgBlackBright('<< WKLAY Deposit Bill >>'));
+  console.log(`1. KLAY: ${chalk.red('-' + formatCurrency(intake, 'KLAY'))}`);
+  console.log(
+    `2. WKLAY: ${chalk.green('+' + formatCurrency(intake, 'WKLAY'))}`
+  );
+  if (await promptConsent()) {
+    const process = createSpinner(
+      'WKLAY Deposit Transaction in Progress...'
+    ).start();
+    await sleep(500);
+    try {
+      await depositTo(intake, signer);
+      process.success({ text: 'Deposit Success' });
+    } catch (e) {
+      console.error(e);
+      process.error({ text: 'Deposit Failed' });
+    }
   }
 }
 
@@ -321,6 +345,7 @@ async function main() {
         await proceedTransferToken(signer);
         break;
       case availableActions[4]: // Wrapped Token
+        await proceedDeposit(signer);
         break;
       case availableActions[5]: // Update Info (Continue)
         break;
