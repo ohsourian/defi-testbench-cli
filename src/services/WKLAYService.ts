@@ -8,4 +8,7 @@ export async function depositTo(klay: string, signer: Wallet) {
   await wklay.deposit({ value: ethers.utils.parseEther(klay) });
 }
 
-export async function withdrawFrom() {}
+export async function withdrawTo(amount: string, signer: Wallet) {
+  const wklay = <WKLAY>new ethers.Contract(assets.wklay, iwklay, signer);
+  await wklay.withdraw(ethers.utils.parseEther(amount));
+}

@@ -2,7 +2,11 @@ import { ethers, Wallet } from 'ethers';
 import { tokenList } from './constants/assets';
 import chalk from 'chalk';
 import { Tokens } from './types/Assets';
-import { getAllBalance, getLPBalance } from './services/TokenService';
+import {
+  getAllBalance,
+  getLPBalance,
+  transferAssetTo,
+} from './services/TokenService';
 import {
   addLiquidity,
   getQuote,
@@ -15,7 +19,7 @@ import inquirer from 'inquirer';
 import figlet from 'figlet';
 import gradient from 'gradient-string';
 import { createSpinner } from 'nanospinner';
-import { depositTo } from './services/WKLAYService';
+import { depositTo, withdrawTo } from './services/WKLAYService';
 
 const formatOpt = {
   minimumFractionDigits: 2,
@@ -134,31 +138,91 @@ async function proceedRemoveLiquidity(signer: Wallet) {
   }
 }
 
-async function proceedDeposit(signer: Wallet) {
-  console.log(chalk.yellow('!!WARNING!! Your KLAY will be used!'));
-  const intake = await getAmountInput();
-  console.log(chalk.bgBlackBright('<< WKLAY Deposit Bill >>'));
-  console.log(`1. KLAY: ${chalk.red('-' + formatCurrency(intake, 'KLAY'))}`);
-  console.log(
-    `2. WKLAY: ${chalk.green('+' + formatCurrency(intake, 'WKLAY'))}`
-  );
-  if (await promptConsent()) {
-    const process = createSpinner(
-      'WKLAY Deposit Transaction in Progress...'
-    ).start();
-    await sleep(500);
-    try {
-      await depositTo(intake, signer);
-      process.success({ text: 'Deposit Success' });
-    } catch (e) {
-      console.error(e);
-      process.error({ text: 'Deposit Failed' });
+async function proceedInteractionWKLAY(signer: Wallet) {
+  const action = await inquirer.prompt({
+    type: 'list',
+    name: 'type',
+    message: 'deposit or withdraw WKLAY?',
+    choices: ['deposit', 'withdraw'],
+  });
+  if (action.type === 'deposit') {
+    console.log(chalk.yellow('!!WARNING!! Your KLAY will be used!'));
+    const intake = await getAmountInput();
+    console.log(chalk.bgBlackBright('<< WKLAY Deposit Bill >>'));
+    console.log(`1. KLAY: ${chalk.red('-' + formatCurrency(intake, 'KLAY'))}`);
+    console.log(
+      `2. WKLAY: ${chalk.green('+' + formatCurrency(intake, 'WKLAY'))}`
+    );
+    if (await promptConsent()) {
+      const process = createSpinner(
+        'WKLAY Deposit Transaction in Progress...'
+      ).start();
+      await sleep(500);
+      try {
+        await depositTo(intake, signer);
+        process.success({ text: 'Deposit Success' });
+      } catch (e) {
+        console.error(e);
+        process.error({ text: 'Deposit Failed' });
+      }
+    }
+  } else {
+    const wklay = await getAmountInput();
+    console.log(chalk.bgBlackBright('<< WKLAY Withdraw Bill >>'));
+    console.log(`1. WKLAY: ${chalk.red('-' + formatCurrency(wklay, 'WKLAY'))}`);
+    console.log(`2. KLAY: ${chalk.green('+' + formatCurrency(wklay, 'KLAY'))}`);
+    if (await promptConsent()) {
+      const process = createSpinner(
+        'WKLAY Withdraw Transaction in Progress...'
+      ).start();
+      await sleep(500);
+      try {
+        await withdrawTo(wklay, signer);
+        process.success({ text: 'Withdraw Success' });
+      } catch (e) {
+        console.error(e);
+        process.error({ text: 'Withdraw Failed' });
+      }
     }
   }
 }
 
 async function proceedTransferToken(signer: Wallet) {
-  const tokens = await selectTokens();
+  const transfer = await inquirer.prompt({
+    type: 'list',
+    name: 'type',
+    message: 'Choose assets to transfer: ',
+    choices: ['KLAY', ...tokenList],
+  });
+  const recipient = await inquirer.prompt({
+    type: 'input',
+    name: 'address',
+    message: 'Enter Recipient Address: ',
+  });
+  const amount = await getAmountInput();
+  console.log(chalk.bgBlackBright('<< Token Transfer Bill >>'));
+  console.log(
+    `1. ${transfer.type}: ${chalk.red(
+      '-' + formatCurrency(amount, transfer.type)
+    )}`
+  );
+  console.log(`2. Recipient: ${recipient.address}`);
+
+  if (await promptConsent()) {
+    if (transfer.type === 'KLAY') {
+      await signer.sendTransaction({
+        to: recipient.address,
+        value: ethers.utils.parseEther(amount),
+      });
+    } else {
+      await transferAssetTo(
+        transfer.type as Tokens,
+        recipient.address,
+        amount,
+        signer
+      );
+    }
+  }
 }
 
 /**
@@ -265,26 +329,28 @@ async function main() {
 
   // ## STEP 3. login (private key => welcome with wallet address)
 
-  // const pvtKey = await inquirer.prompt({
-  //   type: 'input',
-  //   name: 'val',
-  //   message: 'login with private key:',
-  // });
-  // const loginAttempt = createSpinner('logging in...').start();
+  const pvtKey = await inquirer.prompt({
+    type: 'password',
+    mask: '*',
+    name: 'val',
+    message: 'login with private key:',
+  });
+  const loginAttempt = createSpinner('logging in...').start();
   const signer = new Wallet(
-    '682bdd66664f073f48705553f608f5cf399b72c7850c74cdd1c5bc654d36b8a2',
+    // '682bdd66664f073f48705553f608f5cf399b72c7850c74cdd1c5bc654d36b8a2',
+    pvtKey.val,
     provider
   );
-  // await sleep();
-  // try {
-  //   const nonce = await signer.getTransactionCount();
-  //   loginAttempt.success({ text: 'logged in!' });
-  //   console.log(chalk.green(`-- Address: ${signer.address}`));
-  //   console.log(chalk.green(`-- TX Count: ${nonce} tx`));
-  // } catch (e) {
-  //   loginAttempt.error({ text: 'Invalid Login!' });
-  //   process.exit(1);
-  // }
+  await sleep();
+  try {
+    const nonce = await signer.getTransactionCount();
+    loginAttempt.success({ text: 'logged in!' });
+    console.log(chalk.green(`-- Address: ${signer.address}`));
+    console.log(chalk.green(`-- TX Count: ${nonce} tx`));
+  } catch (e) {
+    loginAttempt.error({ text: 'Invalid Login!' });
+    process.exit(1);
+  }
 
   // ## STEP 4. loop begin
 
@@ -345,7 +411,7 @@ async function main() {
         await proceedTransferToken(signer);
         break;
       case availableActions[4]: // Wrapped Token
-        await proceedDeposit(signer);
+        await proceedInteractionWKLAY(signer);
         break;
       case availableActions[5]: // Update Info (Continue)
         break;

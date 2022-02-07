@@ -46,3 +46,14 @@ export async function getLPBalance(pool: string, signer: Wallet) {
     ethers.utils.formatEther(await lp.balanceOf(signer.address))
   ).toString();
 }
+
+export async function transferAssetTo(
+  asset: Tokens,
+  recipient: string,
+  amount: string,
+  signer: Wallet
+) {
+  const assetMap = assets as { [key: string]: string };
+  const token = <Token>new ethers.Contract(assetMap[asset], ierc20, signer);
+  await token.transfer(recipient, ethers.utils.parseEther(amount));
+}
